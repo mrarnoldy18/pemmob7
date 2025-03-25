@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Grafik & Tabel Mahasiswa</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+      }
+      .container {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 20px;
+      }
+      .chart-container {
+        flex: 1;
+      }
+      .table-container {
+        flex: 1;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      th,
+      td {
+        border: 1px solid black;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      button {
+        margin-top: 10px;
+        padding: 10px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Grafik & Tabel Mahasiswa</h2>
+    <div class="container">
+      <div class="chart-container">
+        <canvas id="myChart"></canvas>
+        <button onclick="downloadPDF()">Download PDF</button>
+      </div>
+      <div class="table-container">
+        <h3>Data Mahasiswa</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>NIM</th>
+              <th>Nama</th>
+              <th>Jurusan</th>
+              <th>Alamat</th>
+            </tr>
+          </thead>
+          <tbody id="tabelMahasiswa">
+            <tr>
+              <td colspan="4">Loading data...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <script>
+      fetch("data.php")
+        .then((response) => response.json())
+        .then((data) => {
+          const labels = data.map((item) => item.jurusan);
+          const values = data.map((item) => item.jumlah);
+
+          const ctx = document.getElementById("myChart").getContext("2d");
+          new Chart(ctx, {
+            type: "bar",
+            data: {
+              labels: labels,
+              datasets: [
+                {
+                  label: "Jumlah Mahasiswa",
+                  data: values,
+                  backgroundColor: ["red", "blue", "green", "orange"],
+                  borderColor: ["black", "black", "black", "black"],
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: { responsive: true },
+          });
+        });
+
+      fetch("data_tabel.php")
+        .then((response) => response.json())
+        .then((data) => {
+          const tabel = document.getElementById("tabelMahasiswa");
+          tabel.innerHTML = "";
+          data.forEach((row) => {
+            tabel.innerHTML += `<tr>
+                    <td>${row.nim}</td>
+                    <td>${row.nama}</td>
+                    <td>${row.jurusan}</td>
+                    <td>${row.alamat}</td>
+                </tr>`;
+          });
+        });
+
+    function downloadPDF() {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF();
+        const canvas = document.getElementById('myChart');
+        const tabel = document.getElementById('tabelMahasiswa');
+
+        // Tambahkan judul laporan
+        pdf.text("Laporan Grafik & Tabel Mahasiswa", 10, 10);
+
+        // Tambahkan grafik ke PDF
+        pdf.addImage(canvas.toDataURL("image/png"), 'PNG', 10, 20, 180, 80);
+
+        // Tambahkan tabel ke PDF
+        let startY = 110; // Posisi Y untuk mulai tabel
+        pdf.text("Data Mahasiswa", 10, startY);
+
+        // Ambil data dari tabel HTML
+        let rows = [];
+        document.querySelectorAll("#tabelMahasiswa tr").forEach(row => {
+            let rowData = [];
+            row.querySelectorAll("td, th").forEach(cell => rowData.push(cell.innerText));
+            rows.push(rowData);
+        });
+
+        // Buat tabel di PDF
+        pdf.autoTable({
+            startY: startY + 5,
+            head: [['NIM', 'Nama', 'Jurusan', 'Alamat']], // Header tabel
+            body: rows // Isi tabel dari data HTML
+        });
+
+        // Simpan file PDF
+        pdf.save("laporan_mahasiswa.pdf");
+    }
+</script>
+
+    </script>
+  </body>
+</html>
